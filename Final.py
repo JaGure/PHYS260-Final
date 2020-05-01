@@ -101,7 +101,7 @@ def computeBondSpringForce(oX, oY, hX, hY):
 # Compute forces and potential energy
 # ================================================================================
 
-def force(oX, oY, oDirs, hX, hY):
+def force(oX, oY, hX, hY):
 
     FxO = np.zeros(N, float) # x component of net force on each oxygen
     FyO = np.zeros(N, float) # y component of net force on each oxygen
