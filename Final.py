@@ -83,12 +83,17 @@ def computeWallForce(x, y):
 # returns the force (experienced by the H) as its x and y components
 # ================================================================================
 
-def computeBondSpringForce(oX, oY, hX, hY, hAngle):
+def computeBondSpringForce(oX, oY, hX, hY):
     distToH = np.sqrt((oX - hX)**2 + (oY - hY)**2)
     FonH = -kR * (distToH - bondLength)
 
-    Fx = FonH * np.cos(hAngle)
-    Fy = FonH * np.sin(hAngle)
+    yDist = hY - oY
+    xDist = hX - oX
+
+    angle = np.arctan(yDist / xDist) if xDist >= 0 else np.arctan(yDist / xDist) + np.pi
+
+    Fx = FonH * np.cos(angle)
+    Fy = FonH * np.sin(angle)
 
     return (Fx, Fy)
 
@@ -128,8 +133,8 @@ def force(oX, oY, oDirs, hX, hY):
         FyH[h2Pos] += h2WallForce[1]
 
         # calculating spring force for covalent bonds
-        FxOnH1, FyOnH1 = computeBondSpringForce(x, y, h1X, h1Y, oDir[i] - bondAngle / 2)
-        FxOnH2, FyOnH2 = computeBondSpringForce(x, y, h2X, h2Y, oDir[i] + bondAngle / 2)
+        FxOnH1, FyOnH1 = computeBondSpringForce(x, y, h1X, h1Y)
+        FxOnH2, FyOnH2 = computeBondSpringForce(x, y, h2X, h2Y)
 
         FxO[i] -= (FxOnH1 + FxOnH2)
         FyO[i] -= (FyOnH1 + FyOnH2)
@@ -145,11 +150,11 @@ def force(oX, oY, oDirs, hX, hY):
 # ================================================================================
 # General Parameters
 N = 36
-dt = 0.02 # timestep
+dt = 0.02 # timestep (s)
 # kWall = 10**-9 # stiffness of walls (N/Angstrom)
 # kR = 6.5 * 1.6022e-19 * 10**10 # OH bond stiffness (N/Angstrom)
 kWall = 50
-kR = 6.5
+kR = 650
 wallProximity = 0.5 # how close atoms can be to the wall before being bounced back
 
 # Atomic Properties
@@ -170,11 +175,9 @@ padding = 2 * oRad
 # ================================================================================
 
 # arrays for position: there are two different sets of arrays, one for oxygens
-# and one for hydrogens. o[i]'s Hydrogen's are at h[2*i] and h[2*i + 1]. oDirs
-# is the angle the oxygen molecule is rotated in radians from the horizontal (i.e right is 0)
+# and one for hydrogens. o[i]'s Hydrogen's are at h[2*i] and h[2*i + 1]
 oX = np.zeros(N, float)
 oY = np.zeros(N, float)
-oDir = np.zeros(N, float)
 hX = np.zeros(2 * N, float)
 hY = np.zeros(2 * N, float)
 
@@ -213,7 +216,6 @@ for i in range(numRows):
 
         oX[oLocation] = xCoord
         oY[oLocation] = yCoord
-        oDir[oLocation] = mcAngle
 
         # initializing accompanying hydrogens
         h1Location = 2 * oLocation
@@ -231,7 +233,7 @@ for i in range(numRows):
         hs.append(vp.sphere(pos=vp.vector(h2X, h2Y, 0), radius=hRad, color=hColor))
 
 # Perform a half step
-FxO, FyO, FxH, FyH = force(oX, oY, oDir, hX, hY)
+FxO, FyO, FxH, FyH = force(oX, oY, hX, hY)
 vxmidO = vxO + 0.5 * dt * FxO / oMass
 vymidO = vyO + 0.5 * dt * FyO / oMass
 vxmidH = vxH + 0.5 * dt * FxH / hMass
@@ -243,14 +245,14 @@ vymidH = vyH + 0.5 * dt * FyH / hMass
 
 while True:
 
-    vp.rate(5 / dt)
+    vp.rate(100)
 
     # Verlet algorithm
     oX += vxmidO * dt
     oY += vymidO * dt
     hX += vxmidH * dt
     hY += vymidH * dt
-    FxO, FyO, FxH, FyH = force(oX, oY, oDir, hX, hY)
+    FxO, FyO, FxH, FyH = force(oX, oY, hX, hY)
     # vx = vxmid + 0.5 * Fx / m * dt
     # vy = vymid + 0.5 * Fy / m * dt
     vxmidO += FxO / oMass * dt
