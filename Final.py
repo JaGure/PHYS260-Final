@@ -128,16 +128,15 @@ def force(oX, oY, oDirs, hX, hY):
         FyH[h2Pos] += h2WallForce[1]
 
         # calculating spring force for covalent bonds
+        FxOnH1, FyOnH1 = computeBondSpringForce(x, y, h1X, h1Y, oDir[i] - bondAngle / 2)
+        FxOnH2, FyOnH2 = computeBondSpringForce(x, y, h2X, h2Y, oDir[i] + bondAngle / 2)
 
-        # distToH1 = np.sqrt((x - h1X)**2 + (y - h1Y)**2)
-        # distToH2 = np.sqrt((x - h2X) ** 2 + (y - h2Y) ** 2)
-        # FtoH1 = -kR * (distToH1 - bondLength)
-        # FtoH2 = -kR * (distToH2 - bondLength)
-        # h1Angle = oDirs[i] - bondAngle/2
-        # h2Angle = oDirs[i] + bondAngle/2
-
-
-
+        FxO[i] -= (FxOnH1 + FxOnH2)
+        FyO[i] -= (FyOnH1 + FyOnH2)
+        FxH[h1Pos] += FxOnH1
+        FyH[h1Pos] += FyOnH1
+        FxH[h2Pos] += FxOnH2
+        FyH[h2Pos] += FyOnH2
 
     return FxO, FyO, FxH, FyH
 
