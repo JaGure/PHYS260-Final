@@ -35,24 +35,25 @@ vp.box(pos=vp.vector(w / 2, 0, 0), size=vp.vector(w, 1, 1), color=wallColor)
 # ================================================================================
 
 # oDir is the angle that the water molecule makes counterclockwise
-# relative to the vertical
+# relative to the horizontal (i.e. like a unit circle)
 
 def calculateHPositions(oX, oY, oDir):
 
-    def calculateHLeftPos(oX, oY, oDir):
-        angle = (bondAngle / 2) - oDir
-        xPos = oX - bondLength * np.sin(angle)
-        yPos = oY - bondLength * np.cos(angle)
+    def calculatePos(angle):
+        xPos = oX + bondLength * np.cos(angle)
+        yPos = oY + bondLength * np.sin(angle)
         return (xPos, yPos)
 
-    def calculateHRightPos(oX, oY, oDir):
-        angle = (bondAngle / 2) + oDir
-        xPos = oX + bondLength * np.sin(angle)
-        yPos = oY - bondLength * np.cos(angle)
-        return (xPos, yPos)
+    def calculateHLeftPos():
+        angle = oDir - (bondAngle / 2)
+        return calculatePos(angle)
 
-    h1X, h1Y = calculateHLeftPos(oX, oY, oDir)
-    h2X, h2Y = calculateHRightPos(oX, oY, oDir)
+    def calculateHRightPos():
+        angle = oDir + (bondAngle / 2)
+        return calculatePos(angle)
+
+    h1X, h1Y = calculateHLeftPos()
+    h2X, h2Y = calculateHRightPos()
 
     return (h1X, h1Y, h2X, h2Y)
 
@@ -73,6 +74,21 @@ def computeWallForce(x, y):
         Fy = kWall * (wallProximity - y)
     elif y > w - wallProximity:
         Fy = kWall * (w - wallProximity - y)
+
+    return (Fx, Fy)
+
+# ================================================================================
+# Computes bond force (as a spring force) between two atoms (an O and an H, in
+# this case)
+# returns the force (experienced by the H) as its x and y components
+# ================================================================================
+
+def computeBondSpringForce(oX, oY, hX, hY, hAngle):
+    distToH = np.sqrt((oX - hX)**2 + (oY - hY)**2)
+    FonH = -kR * (distToH - bondLength)
+
+    Fx = FonH * np.cos(hAngle)
+    Fy = FonH * np.sin(hAngle)
 
     return (Fx, Fy)
 
@@ -111,13 +127,25 @@ def force(oX, oY, oDirs, hX, hY):
         FxH[h2Pos] += h2WallForce[0]
         FyH[h2Pos] += h2WallForce[1]
 
+        # calculating spring force for covalent bonds
+
+        # distToH1 = np.sqrt((x - h1X)**2 + (y - h1Y)**2)
+        # distToH2 = np.sqrt((x - h2X) ** 2 + (y - h2Y) ** 2)
+        # FtoH1 = -kR * (distToH1 - bondLength)
+        # FtoH2 = -kR * (distToH2 - bondLength)
+        # h1Angle = oDirs[i] - bondAngle/2
+        # h2Angle = oDirs[i] + bondAngle/2
+
+
+
+
     return FxO, FyO, FxH, FyH
 
 # ================================================================================
 # Simulation parameters
 # ================================================================================
 # General Parameters
-N = 1
+N = 36
 dt = 0.02 # timestep
 kWall = 50.0 # stiffness of walls (N/Angstrom)
 kR = 6.5 * 1.6022e-19 * 10**10 # OH bond stiffness (N/Angstrom)
@@ -142,7 +170,7 @@ padding = 2 * oRad
 
 # arrays for position: there are two different sets of arrays, one for oxygens
 # and one for hydrogens. o[i]'s Hydrogen's are at h[2*i] and h[2*i + 1]. oDirs
-# is the angle the oxygen molecule is rotated in radians from the vertical (i.e down is 0)
+# is the angle the oxygen molecule is rotated in radians from the horizontal (i.e right is 0)
 oX = np.zeros(N, float)
 oY = np.zeros(N, float)
 oDir = np.zeros(N, float)
