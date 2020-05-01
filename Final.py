@@ -151,10 +151,8 @@ def force(oX, oY, hX, hY):
 # General Parameters
 N = 36
 dt = 0.02 # timestep (s)
-# kWall = 10**-9 # stiffness of walls (N/Angstrom)
-# kR = 6.5 * 1.6022e-19 * 10**10 # OH bond stiffness (N/Angstrom)
-kWall = 50
-kR = 650
+kWall = 6.5 # stiffness of walls (eV/Angstrom^2)
+kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
 wallProximity = 0.5 # how close atoms can be to the wall before being bounced back
 
 # Atomic Properties
@@ -245,7 +243,7 @@ vymidH = vyH + 0.5 * dt * FyH / hMass
 
 while True:
 
-    vp.rate(100)
+    vp.rate(5 / dt)
 
     # Verlet algorithm
     oX += vxmidO * dt
