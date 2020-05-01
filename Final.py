@@ -146,8 +146,10 @@ def force(oX, oY, oDirs, hX, hY):
 # General Parameters
 N = 36
 dt = 0.02 # timestep
-kWall = 50.0 # stiffness of walls (N/Angstrom)
-kR = 6.5 * 1.6022e-19 * 10**10 # OH bond stiffness (N/Angstrom)
+# kWall = 10**-9 # stiffness of walls (N/Angstrom)
+# kR = 6.5 * 1.6022e-19 * 10**10 # OH bond stiffness (N/Angstrom)
+kWall = 50
+kR = 6.5
 wallProximity = 0.5 # how close atoms can be to the wall before being bounced back
 
 # Atomic Properties
