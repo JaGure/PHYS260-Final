@@ -132,15 +132,9 @@ def force(oX, oY, hX, hY):
 
         # collision with walls
         oWallForce = computeWallForce(x, y)
-        h1WallForce = computeWallForce(h1X, h1Y)
-        h2WallForce = computeWallForce(h2X, h2Y)
 
         FxO[i] += oWallForce[0]
         FyO[i] += oWallForce[1]
-        FxH[h1Pos] += h1WallForce[0]
-        FyH[h1Pos] += h1WallForce[1]
-        FxH[h2Pos] += h2WallForce[0]
-        FyH[h2Pos] += h2WallForce[1]
 
         # calculating spring force for covalent bonds
         FxOnH1, FyOnH1, h1Angle = computeBondSpringForce(x, y, h1X, h1Y)
@@ -196,6 +190,23 @@ def force(oX, oY, hX, hY):
         FxH[h2Pos] += F2x
         FyH[h2Pos] += F2y
 
+        # Lennard-Jones interaction between the different molecules
+        for j in range(i + 1, N):
+            deltax = oX[j] - x
+            deltay = oY[j] - y
+            Rij = np.sqrt(deltax * deltax + deltay * deltay)
+
+            # if atoms within cutoff, compute LJ force
+            if Rij <= cutoff:
+                # force
+                Fijx = (-12 * ljTwelfth / Rij ** 14 + 6 * ljSixth / Rij ** 8) * deltax
+                Fijy = (-12 * ljTwelfth / Rij ** 14 + 6 * ljSixth / Rij ** 8) * deltay
+
+                # net forces
+                FxO[i] += Fijx
+                FyO[i] += Fijy
+                FxO[j] += -Fijx
+                FyO[j] += -Fijy
 
     return FxO, FyO, FxH, FyH
 
@@ -206,19 +217,28 @@ def force(oX, oY, hX, hY):
 N = 36
 dt = 0.02 # timestep (s)
 kWall = 65 # stiffness of walls (eV/Angstrom^2)
-wallProximity = 0.5 # how close atoms can be to the wall before being bounced back
 nstemp = 50 # number of time steps before velocity rescaling
 T0 = 5 # point temperature
 
-# Atomic Properties
+# Atomic Properties (using TIP3P model)
 oMass = 16 # amu
 hMass = 1.01 # amu
 oRad = 1.52 # Angstroms
 hRad = 1.2 # Angstroms
-bondAngle = 104.45 * (np.pi / 180) # rad
-bondLength = 0.9584 # Angstroms
+bondAngle = 104.52 * (np.pi / 180) # rad
+bondLength = 0.9572 # Angstroms
 kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
 kTheta = 1 # Bond angle stiffness (eV/Radian^2)
+sigma = 3.15061	# LJ Radius (A)
+epsilon = (0.6364 * 1000) / (6.022e23 * 1.6022e-19) # eV/atom
+wallProximity = 2**(1/6)*sigma/2 # how close atoms can be to the wall before being bounced back
+
+# Values for calculating LJ Potential
+sigmaSixth = sigma**6                 # sigma^6
+sigmaTwelfth = sigmaSixth**2          # sigma^12
+ljSixth = 4*epsilon*sigmaSixth        # 4*epsilon*sigma**6
+ljTwelfth = 4*epsilon*sigmaTwelfth    # 4*epsilon*sigma**12
+cutoff = 3*sigma                      # cutoff distance for force calculation
 
 # Parameters for Drawing
 oColor = vp.color.red
