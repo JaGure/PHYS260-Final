@@ -2,9 +2,8 @@
 # Final.py
 # Python 3.7
 """
-Author: Jake Gurevitch
+Author: Jake Gurevitch & Brian Song
 Created: 4/29/20
-Modified: %(date)s
 
 Description
     Simulation of Water Molecules for PHYS260 Final Project
