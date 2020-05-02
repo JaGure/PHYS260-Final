@@ -108,6 +108,20 @@ def computeBondSpringForce(oX, oY, hX, hY):
     return (Fx, Fy, absoluteAngle)
 
 # ================================================================================
+# Computes Coulombic force between two charged atoms
+# force is from atom 2 on atom 1
+# ================================================================================
+def computeCoulombicForce(x1, y1, x2, y2, q1, q2):
+    d12 = np.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
+
+    F = kE * q1 * q2 / d12**3
+
+    Fx = F * (x2 - x1)
+    Fy = F * (y2 - y1)
+
+    return (Fx, Fy)
+
+# ================================================================================
 # Compute forces and potential energy
 # ================================================================================
 
@@ -208,18 +222,51 @@ def force(oX, oY, hX, hY):
                 FxO[j] += -Fijx
                 FyO[j] += -Fijy
 
+        # Calculating Coulomb force
+        for j in range(i + 1, N):
+            # pulling out jth water molecule
+            h3Pos = 2 * j
+            h4Pos = 2 * j + 1
+
+            x2 = oX[j]
+            y2 = oY[j]
+            h3X = hX[h3Pos]
+            h3Y = hY[h3Pos]
+            h4X = hX[h4Pos]
+            h4Y = hY[h4Pos]
+
+            # calculating forces
+            FOOx, FOOy = computeCoulombicForce(x, y, x2, y2, oCharge, oCharge) # force between the oxygens
+            FOH3x, FOH3y = computeCoulombicForce(x, y, h3X, h3Y, oCharge, hCharge) # force from o1 to h3
+            FOH4x, FOH4y = computeCoulombicForce(x, y, h4X, h4Y, oCharge, hCharge) # force from o1 to h4
+            FH1Ox, FH1Oy = computeCoulombicForce(h1X, h1Y, x2, y2, hCharge, oCharge) # force from h1 to o2
+            FH1H3x, FH1H3y = computeCoulombicForce(h1X, h1Y, h3X, h3Y, hCharge, hCharge) # force from h1 to h3
+            FH1H4x, FH1H4y = computeCoulombicForce(h1X, h1Y, h4X, h4Y, hCharge, hCharge) # force from h1 to h4
+            FH2Ox, FH2Oy = computeCoulombicForce(h2X, h2Y, x2, y2, hCharge, oCharge) # force from h2 to o2
+            FH2H3x, FH2H3y = computeCoulombicForce(h2X, h2Y, h3X, h3Y, hCharge, hCharge) # force from h2 to h3
+            FH2H4x, FH2H4y = computeCoulombicForce(h2X, h2Y, h4X, h4Y, hCharge, hCharge) # force from h2 to h4
+
+            # forces on ith water
+            FxO[i] += (FOOx + FOH3x + FOH4x)
+            FyO[i] += (FOOy + FOH3y + FOH4y)
+            FxH[h1Pos] += (FH1Ox + FH1H3x + FH1H4x)
+            FyH[h1Pos] += (FH1Oy + FH1H3y + FH1H4y)
+            FxH[h2Pos] += (FH2Ox + FH2H3x + FH2H4x)
+            FyH[h2Pos] += (FH2Oy + FH2H3y + FH2H4y)
+
+            # forces on jth water
+            FxO[j] -= (FOOx + FH1Ox + FH2Ox)
+            FyO[j] -= (FOOy + FH1Oy + FH2Oy)
+            FxH[h3Pos] -= (FOH3x + FH1H3x + FH2H3x)
+            FyH[h3Pos] -= (FOH3y + FH1H3y + FH2H3y)
+            FxH[h4Pos] -= (FOH4x + FH1H4x + FH2H4x)
+            FxH[h4Pos] -= (FOH4y + FH1H4y + FH2H4y)
+
     return FxO, FyO, FxH, FyH
 
 # ================================================================================
 # Simulation parameters
 # ================================================================================
-# General Parameters
-N = 36
-dt = 0.02 # timestep (s)
-kWall = 65 # stiffness of walls (eV/Angstrom^2)
-nstemp = 50 # number of time steps before velocity rescaling
-T0 = 5 # point temperature
-
 # Atomic Properties (using TIP3P model)
 oMass = 16 # amu
 hMass = 1.01 # amu
@@ -231,6 +278,16 @@ kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
 kTheta = 1 # Bond angle stiffness (eV/Radian^2)
 sigma = 3.15061	# LJ Radius (A)
 epsilon = (0.6364 * 1000) / (6.022e23 * 1.6022e-19) # eV/atom
+hCharge = 0.4170 # e
+oCharge = -0.8340 # e
+kE = 10**10 / (4 * np.pi * 8.854e-12 * 1.602e19) # constant for couloumbic force (eV*angstrom/electron^2)
+
+# General Parameters
+N = 36
+dt = 0.02 # timestep (s)
+kWall = 65 # stiffness of walls (eV/Angstrom^2)
+nstemp = 50 # number of time steps before velocity rescaling
+T0 = 5 # point temperature
 wallProximity = 2**(1/6)*sigma/2 # how close atoms can be to the wall before being bounced back
 
 # Values for calculating LJ Potential
@@ -238,7 +295,7 @@ sigmaSixth = sigma**6                 # sigma^6
 sigmaTwelfth = sigmaSixth**2          # sigma^12
 ljSixth = 4*epsilon*sigmaSixth        # 4*epsilon*sigma**6
 ljTwelfth = 4*epsilon*sigmaTwelfth    # 4*epsilon*sigma**12
-cutoff = 3*sigma                      # cutoff distance for force calculation
+cutoff = 3*sigma                      # cutoff distance for LJ force calculation
 
 # Parameters for Drawing
 oColor = vp.color.red
