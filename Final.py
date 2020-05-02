@@ -35,8 +35,7 @@ vp.box(pos=vp.vector(w / 2, 0, 0), size=vp.vector(w, 1, 1), color=wallColor)
 # ================================================================================
 
 # oDir is the angle that the water molecule makes counterclockwise
-# relative to the horizontal (i.e. like a unit circle)
-
+# relative to the horizontal (like a unit circle)
 def calculateHPositions(oX, oY, oDir):
 
     def calculatePos(angle):
@@ -138,10 +137,10 @@ def force(oX, oY, hX, hY):
 
         FxO[i] += oWallForce[0]
         FyO[i] += oWallForce[1]
-        # FxH[h1Pos] += h1WallForce[0]
-        # FyH[h1Pos] += h1WallForce[1]
-        # FxH[h2Pos] += h2WallForce[0]
-        # FyH[h2Pos] += h2WallForce[1]
+        FxH[h1Pos] += h1WallForce[0]
+        FyH[h1Pos] += h1WallForce[1]
+        FxH[h2Pos] += h2WallForce[0]
+        FyH[h2Pos] += h2WallForce[1]
 
         # calculating spring force for covalent bonds
         FxOnH1, FyOnH1, h1Angle = computeBondSpringForce(x, y, h1X, h1Y)
@@ -155,9 +154,11 @@ def force(oX, oY, hX, hY):
         FyH[h2Pos] += FyOnH2
 
         # calculating restorative angle force
-        torque = -kTheta * (np.abs(h2Angle - h1Angle) - bondAngle)
+        magAngleDifference = np.abs(h2Angle - h1Angle)
+        if magAngleDifference > np.pi:
+            magAngleDifference = 2 * np.pi - magAngleDifference
 
-        print(np.abs(h2Angle - h1Angle) - bondAngle, h1Angle, h2Angle)
+        torque = -kTheta * (magAngleDifference - bondAngle)
 
         F1 = torque / np.sqrt((h1X - x) ** 2 + (h1Y - y) ** 2)
         F2 = torque / np.sqrt((h2X - x) ** 2 + (h2Y - y) ** 2)
@@ -253,8 +254,8 @@ hs = []
 # parameters for spacing molecules
 numRows = int(np.ceil(np.sqrt(N)))
 moleculesPerRow = int(np.ceil(N / numRows))
-dx = 1 if moleculesPerRow <= 1 else (w - 2*padding)/(moleculesPerRow - 1)
-dy = 1 if numRows <= 1 else (w - 2*padding)/(numRows - 1)
+dx = 1 if moleculesPerRow <= 1 else (w - 2 * padding)/(moleculesPerRow - 1)
+dy = 1 if numRows <= 1 else (w - 2 * padding)/(numRows - 1)
 
 # initializing molecules
 for i in range(numRows):
