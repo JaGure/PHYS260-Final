@@ -218,7 +218,7 @@ hRad = 1.2 # Angstroms
 bondAngle = 104.45 * (np.pi / 180) # rad
 bondLength = 0.9584 # Angstroms
 kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
-kTheta = 10 # Bond angle stiffness (eV/Radian^2)
+kTheta = 1 # Bond angle stiffness (eV/Radian^2)
 
 # Parameters for Drawing
 oColor = vp.color.red
