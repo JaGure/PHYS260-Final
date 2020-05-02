@@ -80,7 +80,8 @@ def computeWallForce(x, y):
 # ================================================================================
 # Computes bond force (as a spring force) between two atoms (an O and an H, in
 # this case)
-# returns the force (experienced by the H) as its x and y components
+# returns the force (experienced by the H) as its x and y components, as well
+# as the angle between the O and the H
 # ================================================================================
 
 def computeBondSpringForce(oX, oY, hX, hY):
@@ -90,12 +91,22 @@ def computeBondSpringForce(oX, oY, hX, hY):
     yDist = hY - oY
     xDist = hX - oX
 
-    angle = np.arctan(yDist / xDist) if xDist >= 0 else np.arctan(yDist / xDist) + np.pi
+    relativeAngle = np.arctan(yDist / xDist)
+    absoluteAngle = relativeAngle
 
-    Fx = FonH * np.cos(angle)
-    Fy = FonH * np.sin(angle)
+    # right side of unit circle
+    if xDist >= 0:
+        # quadrant IV
+        if yDist < 0:
+            absoluteAngle = 2 * np.pi + relativeAngle
+    # left side
+    else:
+        absoluteAngle = np.pi + relativeAngle
 
-    return (Fx, Fy)
+    Fx = FonH * np.cos(absoluteAngle)
+    Fy = FonH * np.sin(absoluteAngle)
+
+    return (Fx, Fy, absoluteAngle)
 
 # ================================================================================
 # Compute forces and potential energy
@@ -127,14 +138,14 @@ def force(oX, oY, hX, hY):
 
         FxO[i] += oWallForce[0]
         FyO[i] += oWallForce[1]
-        FxH[h1Pos] += h1WallForce[0]
-        FyH[h1Pos] += h1WallForce[1]
-        FxH[h2Pos] += h2WallForce[0]
-        FyH[h2Pos] += h2WallForce[1]
+        # FxH[h1Pos] += h1WallForce[0]
+        # FyH[h1Pos] += h1WallForce[1]
+        # FxH[h2Pos] += h2WallForce[0]
+        # FyH[h2Pos] += h2WallForce[1]
 
         # calculating spring force for covalent bonds
-        FxOnH1, FyOnH1 = computeBondSpringForce(x, y, h1X, h1Y)
-        FxOnH2, FyOnH2 = computeBondSpringForce(x, y, h2X, h2Y)
+        FxOnH1, FyOnH1, h1Angle = computeBondSpringForce(x, y, h1X, h1Y)
+        FxOnH2, FyOnH2, h2Angle = computeBondSpringForce(x, y, h2X, h2Y)
 
         FxO[i] -= (FxOnH1 + FxOnH2)
         FyO[i] -= (FyOnH1 + FyOnH2)
@@ -142,6 +153,48 @@ def force(oX, oY, hX, hY):
         FyH[h1Pos] += FyOnH1
         FxH[h2Pos] += FxOnH2
         FyH[h2Pos] += FyOnH2
+
+        # calculating restorative angle force
+        torque = -kTheta * (np.abs(h2Angle - h1Angle) - bondAngle)
+
+        print(np.abs(h2Angle - h1Angle) - bondAngle, h1Angle, h2Angle)
+
+        F1 = torque / np.sqrt((h1X - x) ** 2 + (h1Y - y) ** 2)
+        F2 = torque / np.sqrt((h2X - x) ** 2 + (h2Y - y) ** 2)
+
+        forceAngle1 = h1Angle
+        forceAngle2 = h2Angle
+        angleDifference = h1Angle - h2Angle
+
+        # want to get closer
+        if torque <= 0:
+            # decrease h1 angle to get closer
+            if angleDifference <= -np.pi or (angleDifference >= 0 and angleDifference <= np.pi):
+                forceAngle1 = h1Angle - np.pi/2
+                forceAngle2 = h2Angle + np.pi/2
+            else:
+                forceAngle1 = h1Angle + np.pi/2
+                forceAngle2 = h2Angle - np.pi/2
+        # want to get further
+        elif torque > 0:
+            # decrease h1 angle to get further away
+            if angleDifference <= -np.pi or (angleDifference >= 0 and angleDifference <= np.pi):
+                forceAngle1 = h1Angle + np.pi/2
+                forceAngle2 = h2Angle - np.pi/2
+            else:
+                forceAngle1 = h1Angle - np.pi/2
+                forceAngle2 = h2Angle + np.pi/2
+
+        F1x = F1 * np.cos(forceAngle1)
+        F1y = F1 * np.sin(forceAngle1)
+        F2x = F2 * np.cos(forceAngle2)
+        F2y = F2 * np.sin(forceAngle2)
+
+        FxH[h1Pos] += F1x
+        FyH[h1Pos] += F1y
+        FxH[h2Pos] += F2x
+        FyH[h2Pos] += F2y
+
 
     return FxO, FyO, FxH, FyH
 
@@ -151,8 +204,7 @@ def force(oX, oY, hX, hY):
 # General Parameters
 N = 36
 dt = 0.02 # timestep (s)
-kWall = 6.5 # stiffness of walls (eV/Angstrom^2)
-kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
+kWall = 65 # stiffness of walls (eV/Angstrom^2)
 wallProximity = 0.5 # how close atoms can be to the wall before being bounced back
 
 # Atomic Properties
@@ -162,6 +214,8 @@ oRad = 1.52 # Angstroms
 hRad = 1.2 # Angstroms
 bondAngle = 104.45 * (np.pi / 180) # rad
 bondLength = 0.9584 # Angstroms
+kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
+kTheta = 1 # Bond angle stiffness (eV/Radian^2)
 
 # Parameters for Drawing
 oColor = vp.color.red
