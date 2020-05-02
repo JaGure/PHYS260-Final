@@ -207,6 +207,8 @@ N = 36
 dt = 0.02 # timestep (s)
 kWall = 65 # stiffness of walls (eV/Angstrom^2)
 wallProximity = 0.5 # how close atoms can be to the wall before being bounced back
+nstemp = 50 # number of time steps before velocity rescaling
+T0 = 5 # point temperature
 
 # Atomic Properties
 oMass = 16 # amu
@@ -216,7 +218,7 @@ hRad = 1.2 # Angstroms
 bondAngle = 104.45 * (np.pi / 180) # rad
 bondLength = 0.9584 # Angstroms
 kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
-kTheta = 1 # Bond angle stiffness (eV/Radian^2)
+kTheta = 10 # Bond angle stiffness (eV/Radian^2)
 
 # Parameters for Drawing
 oColor = vp.color.red
@@ -246,6 +248,7 @@ vxmidH = np.zeros(2 * N, float)
 vymidH = np.zeros(2 * N, float)
 
 t = 0
+counter = 0
 
 # lists of atoms (for redrawing)
 os = []
@@ -306,12 +309,17 @@ while True:
     hX += vxmidH * dt
     hY += vymidH * dt
     FxO, FyO, FxH, FyH = force(oX, oY, hX, hY)
-    # vx = vxmid + 0.5 * Fx / m * dt
-    # vy = vymid + 0.5 * Fy / m * dt
+    vxO = vxmidO + 0.5 * FxO / oMass * dt
+    vyO = vymidO + 0.5 * FyO / oMass * dt
+    vxH = vxmidH + 0.5 * FxH / hMass * dt
+    vyH = vymidH + 0.5 * FyH / hMass * dt
     vxmidO += FxO / oMass * dt
     vymidO += FyO / oMass * dt
     vxmidH += FxH / hMass * dt
     vymidH += FyH / hMass * dt
+
+    K = 0.5 * (oMass*sum(vxO*vxO + vyO*vyO) + hMass*sum(vxH*vxH + vyH*vyH)) # kinetic energy
+    T = K/N # temperature
 
     # update atom positions
     for i in range(N):
@@ -319,4 +327,19 @@ while True:
         hs[2 * i].pos = vp.vector(hX[2 * i], hY[2 * i], 0)
         hs[2 * i + 1].pos = vp.vector(hX[2 * i + 1], hY[2 * i + 1], 0)
 
+    # Thermostat
+    if counter % nstemp == 0 and counter > 0:
+        if T == 0:
+            vxmidO = np.array([0.5 - random() for i in range(N)], float)
+            vymidO = np.array([0.5 - random() for i in range(N)], float)
+            vxmidH = np.array([vxO[int(i / 2)] for i in range(2 * N)], float)
+            vymidH = np.array([vyO[int(i / 2)] for i in range(2 * N)], float)
+        else:
+            gamma = np.sqrt(T0/T)
+            vxmidO *= gamma
+            vymidO *= gamma
+            vxmidH *= gamma
+            vymidH *= gamma
+
+    counter += 1
     t += dt
