@@ -114,10 +114,10 @@ def computeBondSpringForce(oX, oY, hX, hY):
 def computeCoulombicForce(x1, y1, x2, y2, q1, q2):
     d12 = np.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1))
 
-    F = kE * q1 * q2 / d12**3
+    F = -kE * q1 * q2 / d12**2
 
-    Fx = F * (x2 - x1)
-    Fy = F * (y2 - y1)
+    Fx = F * (x2 - x1) / d12
+    Fy = F * (y2 - y1) / d12
 
     return (Fx, Fy)
 
@@ -132,7 +132,7 @@ def force(oX, oY, hX, hY):
     FxH = np.zeros(2 * N, float) # x component of net force on each hydrogen
     FyH = np.zeros(2 * N, float) # y component of net force on each hydrogen
 
-    # Calculates Fx, Fy for Os and Hs
+    # Calculates Fx and Fy for Os and Hs
     for i in range(N):
         h1Pos = 2 * i
         h2Pos = 2 * i + 1
@@ -210,7 +210,7 @@ def force(oX, oY, hX, hY):
             deltay = oY[j] - y
             Rij = np.sqrt(deltax * deltax + deltay * deltay)
 
-            # if atoms within cutoff, compute LJ force
+            # if molecules within cutoff, compute LJ force
             if Rij <= cutoff:
                 # force
                 Fijx = (-12 * ljTwelfth / Rij ** 14 + 6 * ljSixth / Rij ** 8) * deltax
@@ -237,14 +237,14 @@ def force(oX, oY, hX, hY):
 
             # calculating forces
             FOOx, FOOy = computeCoulombicForce(x, y, x2, y2, oCharge, oCharge) # force between the oxygens
-            FOH3x, FOH3y = computeCoulombicForce(x, y, h3X, h3Y, oCharge, hCharge) # force from o1 to h3
-            FOH4x, FOH4y = computeCoulombicForce(x, y, h4X, h4Y, oCharge, hCharge) # force from o1 to h4
-            FH1Ox, FH1Oy = computeCoulombicForce(h1X, h1Y, x2, y2, hCharge, oCharge) # force from h1 to o2
-            FH1H3x, FH1H3y = computeCoulombicForce(h1X, h1Y, h3X, h3Y, hCharge, hCharge) # force from h1 to h3
-            FH1H4x, FH1H4y = computeCoulombicForce(h1X, h1Y, h4X, h4Y, hCharge, hCharge) # force from h1 to h4
-            FH2Ox, FH2Oy = computeCoulombicForce(h2X, h2Y, x2, y2, hCharge, oCharge) # force from h2 to o2
-            FH2H3x, FH2H3y = computeCoulombicForce(h2X, h2Y, h3X, h3Y, hCharge, hCharge) # force from h2 to h3
-            FH2H4x, FH2H4y = computeCoulombicForce(h2X, h2Y, h4X, h4Y, hCharge, hCharge) # force from h2 to h4
+            FOH3x, FOH3y = computeCoulombicForce(x, y, h3X, h3Y, oCharge, hCharge) # force on o1 from h3
+            FOH4x, FOH4y = computeCoulombicForce(x, y, h4X, h4Y, oCharge, hCharge) # force on o1 from h4
+            FH1Ox, FH1Oy = computeCoulombicForce(h1X, h1Y, x2, y2, hCharge, oCharge) # force on h1 from o2
+            FH1H3x, FH1H3y = computeCoulombicForce(h1X, h1Y, h3X, h3Y, hCharge, hCharge) # force on h1 from h3
+            FH1H4x, FH1H4y = computeCoulombicForce(h1X, h1Y, h4X, h4Y, hCharge, hCharge) # force on h1 from h4
+            FH2Ox, FH2Oy = computeCoulombicForce(h2X, h2Y, x2, y2, hCharge, oCharge) # force on h2 from o2
+            FH2H3x, FH2H3y = computeCoulombicForce(h2X, h2Y, h3X, h3Y, hCharge, hCharge) # force on h2 from h3
+            FH2H4x, FH2H4y = computeCoulombicForce(h2X, h2Y, h4X, h4Y, hCharge, hCharge) # force on h2 from h4
 
             # forces on ith water
             FxO[i] += (FOOx + FOH3x + FOH4x)
