@@ -283,7 +283,7 @@ kE = 10**10 / (4 * np.pi * 8.854e-12 * 1.602e19) # constant for couloumbic force
 
 # General Parameters
 N = 36
-dt = 0.02 # timestep (s)
+dt = 0.001 # timestep (s)
 kWall = 65 # stiffness of walls (eV/Angstrom^2)
 nstemp = 50 # number of time steps before velocity rescaling
 T0 = 5 # point temperature
@@ -377,7 +377,7 @@ vymidH = vyH + 0.5 * dt * FyH / hMass
 
 while True:
 
-    vp.rate(5 / dt)
+    vp.rate(1000 / dt)
 
     # Verlet algorithm
     oX += vxmidO * dt
