@@ -160,8 +160,8 @@ def force(oX, oY, hX, hY):
 
         torque = -kTheta * (magAngleDifference - bondAngle)
 
-        F1 = torque / np.sqrt((h1X - x) ** 2 + (h1Y - y) ** 2)
-        F2 = torque / np.sqrt((h2X - x) ** 2 + (h2Y - y) ** 2)
+        F1 = np.abs(torque / np.sqrt((h1X - x) ** 2 + (h1Y - y) ** 2))
+        F2 = np.abs(torque / np.sqrt((h2X - x) ** 2 + (h2Y - y) ** 2))
 
         forceAngle1 = h1Angle
         forceAngle2 = h2Angle
