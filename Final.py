@@ -67,13 +67,13 @@ def computeWallForce(x, y):
 
     if x < wallProximity:
         Fx = kWall * (wallProximity - x)
-    elif x > w - wallProximity:
-        Fx = kWall * (w - wallProximity - x)
+    elif x > w * L - wallProximity:
+        Fx = kWall * (w * L - wallProximity - x)
 
     if y < wallProximity:
         Fy = kWall * (wallProximity - y)
-    elif y > w - wallProximity:
-        Fy = kWall * (w - wallProximity - y)
+    elif y > w * L - wallProximity:
+        Fy = kWall * (w * L - wallProximity - y)
 
     return (Fx, Fy)
 
@@ -269,24 +269,24 @@ def force(oX, oY, hX, hY):
 # Simulation parameters
 # ================================================================================
 # Atomic Properties (using TIP3P model)
-oMass = 16*(1.66054e-27/1) # kg
-hMass = 1.01*(1.66054e-27/1) # kg
-oRad = 1.52*(1/1e10) # m
-hRad = 1.2*(1/1e10) # m
+oMass = 16 * (1.66054e-27 / 1) # kg
+hMass = 1.01 * (1.66054e-27 / 1) # kg
+oRad = 1.52 * (1 / 1e10) # m
+hRad = 1.2 * (1 / 1e10) # m
 bondAngle = 104.52 * (np.pi / 180) # rad
-bondLength = 0.9584*(1/1e10) # m
-kR = (6.5)*(1.602e-19/1)*(1e10)**2 # OH bond stiffness (J/m^2)
-kTheta = (1)*(1.602e-19/1) # Bond angle stiffness (J/radian^2)
-sigma = 3.15061*(1/1e10) # LJ Radius (m)
-epsilon = 0.6364*(1000/1)*(1/6.022e23)  # J/atom
-hCharge = 0.410*(1.602e-19/1) # C
-oCharge = -0.8200*(1.602e-19/1) # C
+bondLength = 0.9572 * (1 / 1e10) # m
+kR = 6.5 * (1.602e-19) * (1e10)**2 # OH bond stiffness (J/m^2)
+kTheta = 1 * 1.602e-19 # Bond angle stiffness (J/radian^2)
+sigma = 3.15061 * (1 / 1e10) # LJ Radius (m)
+epsilon = 0.6364 * 1000 *  (1 / 6.022e23)  # J/atom
+hCharge = +0.4170 * (1.602e-19 / 1) # C
+oCharge = -0.8340 * (1.602e-19 / 1) # C
 kE = 8.988e9 # constant for couloumbic force (Jm/C^2)
 
 # General Parameters
 N = 36
-dt = 1e-16 # timestep (s)
-kWall = 600 # stiffness of walls (J/radian^2)
+dt = 1e-15 # timestep (s)
+kWall = 600 # stiffness of walls (J/m^2)
 nstemp = 50 # number of time steps before velocity rescaling
 T0 = 200 # point temperature (K)
 wallProximity = 2**(1/6)*sigma/2 # how close atoms can be to the wall before being bounced back
@@ -397,7 +397,7 @@ while True:
     vymidH += FyH / hMass * dt
 
     K = 0.5 * (oMass*sum(vxO*vxO + vyO*vyO) + hMass*sum(vxH*vxH + vyH*vyH)) # kinetic energy
-    T = K/(N * 1.381e-23) # temperature
+    T = (2.0 / 3.0) * K/(N * 1.381e-23) # temperature
 
     # update atom positions
     for i in range(N):
