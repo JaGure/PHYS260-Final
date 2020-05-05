@@ -277,7 +277,7 @@ bondAngle = 104.52 * (np.pi / 180) # rad
 bondLength = 0.9572 * (1 / 1e10) # m
 kR = 6.5 * (1.602e-19) * (1e10)**2 # OH bond stiffness (J/m^2)
 kTheta = 1 * 1.602e-19 # Bond angle stiffness (J/radian^2)
-sigma = 4 * (1 / 1e10) # LJ Radius (m)   3.15061
+sigma = 4 * (1 / 1e10) # LJ Radius (m) (approximated to 4, really ~3.15061)
 epsilon = 0.6364 * 1000 * (1 / 6.022e23)  # J/atom
 hCharge = +0.4170 * (1.602e-19 / 1) # C
 oCharge = -0.8340 * (1.602e-19 / 1) # C
@@ -288,7 +288,7 @@ N = 36
 dt = 1e-15 # timestep (s)
 kWall = 600 # stiffness of walls (J/m^2)
 nstemp = 50 # number of time steps before velocity rescaling
-T0 = 600 # point temperature (K)
+T0 = 325 # point temperature (K)
 wallProximity = 2**(1/6)*sigma/2 # how close atoms can be to the wall before being bounced back
 
 # Values for calculating LJ Potential
