@@ -13,10 +13,12 @@ import numpy as np
 from random import random
 import vpython as vp
 
+L = 1e-10 # lengthscale (m)
+
 # ================================================================================
 # Scene set up
 # ================================================================================
-w = 50  # box width (in Angstroms)
+w = 50  # box width (m)
 backgroundColor = vp.color.cyan
 wallColor = vp.color.gray(luminance=0.9)
 scene = vp.canvas(width=10 * w, height=10 * w, center=vp.vector(w / 2, w / 2, 0), range=0.6 * w, fov=0.01,
@@ -267,26 +269,26 @@ def force(oX, oY, hX, hY):
 # Simulation parameters
 # ================================================================================
 # Atomic Properties (using TIP3P model)
-oMass = 16 # amu
-hMass = 1.01 # amu
-oRad = 1.52 # Angstroms
-hRad = 1.2 # Angstroms
+oMass = 16*(1.66054e-27/1) # kg
+hMass = 1.01*(1.66054e-27/1) # kg
+oRad = 1.52*(1/1e10) # m
+hRad = 1.2*(1/1e10) # m
 bondAngle = 104.52 * (np.pi / 180) # rad
-bondLength = 0.9572 # Angstroms
-kR = 6.5 # OH bond stiffness (eV/Angstrom^2)
-kTheta = 1 # Bond angle stiffness (eV/Radian^2)
-sigma = 3.15061	# LJ Radius (A)
-epsilon = (0.6364 * 1000) / (6.022e23 * 1.6022e-19) # eV/atom
-hCharge = 0.4170 # e
-oCharge = -0.8340 # e
-kE = 10**10 / (4 * np.pi * 8.854e-12 * 1.602e19) # constant for couloumbic force (eV*angstrom/electron^2)
+bondLength = 0.9584*(1/1e10) # m
+kR = (6.5)*(1.602e-19/1)*(1e10)**2 # OH bond stiffness (J/m^2)
+kTheta = (1)*(1.602e-19/1) # Bond angle stiffness (J/radian^2)
+sigma = 3.15061*(1/1e10) # LJ Radius (m)
+epsilon = 0.6364*(1000/1)*(1/6.022e23)  # J/atom
+hCharge = 0.410*(1.602e-19/1) # C
+oCharge = -0.8200*(1.602e-19/1) # C
+kE = 8.988e9 # constant for couloumbic force (Jm/C^2)
 
 # General Parameters
 N = 36
-dt = 0.001 # timestep (s)
-kWall = 65 # stiffness of walls (eV/Angstrom^2)
+dt = 1e-16 # timestep (s)
+kWall = 600 # stiffness of walls (J/radian^2)
 nstemp = 50 # number of time steps before velocity rescaling
-T0 = 5 # point temperature
+T0 = 200 # point temperature (K)
 wallProximity = 2**(1/6)*sigma/2 # how close atoms can be to the wall before being bounced back
 
 # Values for calculating LJ Potential
@@ -299,7 +301,7 @@ cutoff = 3*sigma                      # cutoff distance for LJ force calculation
 # Parameters for Drawing
 oColor = vp.color.red
 hColor = vp.color.white
-padding = 2 * oRad
+padding = 2 * (oRad/L)
 
 # ================================================================================
 # Initialization
@@ -313,8 +315,8 @@ hX = np.zeros(2 * N, float)
 hY = np.zeros(2 * N, float)
 
 # arrays for velocity
-vxO = np.array([0.5 - random() for i in range(N)], float)
-vyO = np.array([0.5 - random() for i in range(N)], float)
+vxO = np.array([1500 * (0.5 - random()) for i in range(N)], float)
+vyO = np.array([1500 * (0.5 - random()) for i in range(N)], float)
 vxmidO = np.zeros(N, float)
 vymidO = np.zeros(N, float)
 # instantiating the hydrogens with the same speed as their water
@@ -342,8 +344,8 @@ for i in range(numRows):
         # initializing oxygen atom
         oLocation = i * moleculesPerRow + j
 
-        xCoord = j * dx + padding
-        yCoord = i * dy + padding
+        xCoord = j * (dx * L) + (padding * L)
+        yCoord = i * (dy * L) + (padding * L)
         mcAngle = random() * 2 * np.pi
 
         oX[oLocation] = xCoord
@@ -360,9 +362,9 @@ for i in range(numRows):
         hY[h2Location] = h2Y
 
         # drawing in molecule
-        os.append(vp.sphere(pos=vp.vector(xCoord, yCoord, 0), radius=oRad, color=oColor))
-        hs.append(vp.sphere(pos=vp.vector(h1X, h1Y, 0), radius=hRad, color=hColor))
-        hs.append(vp.sphere(pos=vp.vector(h2X, h2Y, 0), radius=hRad, color=hColor))
+        os.append(vp.sphere(pos=vp.vector(xCoord / L, yCoord / L, 0), radius=oRad/L, color=oColor))
+        hs.append(vp.sphere(pos=vp.vector(h1X / L, h1Y / L, 0), radius=hRad / L, color=hColor))
+        hs.append(vp.sphere(pos=vp.vector(h2X / L, h2Y / L, 0), radius=hRad / L, color=hColor))
 
 # Perform a half step
 FxO, FyO, FxH, FyH = force(oX, oY, hX, hY)
@@ -395,19 +397,19 @@ while True:
     vymidH += FyH / hMass * dt
 
     K = 0.5 * (oMass*sum(vxO*vxO + vyO*vyO) + hMass*sum(vxH*vxH + vyH*vyH)) # kinetic energy
-    T = K/N # temperature
+    T = K/(N * 1.381e-23) # temperature
 
     # update atom positions
     for i in range(N):
-        os[i].pos = vp.vector(oX[i], oY[i], 0)
-        hs[2 * i].pos = vp.vector(hX[2 * i], hY[2 * i], 0)
-        hs[2 * i + 1].pos = vp.vector(hX[2 * i + 1], hY[2 * i + 1], 0)
+        os[i].pos = vp.vector(oX[i] / L, oY[i] / L, 0)
+        hs[2 * i].pos = vp.vector(hX[2 * i] / L, hY[2 * i] / L, 0)
+        hs[2 * i + 1].pos = vp.vector(hX[2 * i + 1] / L, hY[2 * i + 1] / L , 0)
 
     # Thermostat
     if counter % nstemp == 0 and counter > 0:
         if T == 0:
-            vxmidO = np.array([0.5 - random() for i in range(N)], float)
-            vymidO = np.array([0.5 - random() for i in range(N)], float)
+            vxmidO = np.array([1500 * (0.5 - random()) for i in range(N)], float)
+            vymidO = np.array([1500 * (0.5 - random()) for i in range(N)], float)
             vxmidH = np.array([vxO[int(i / 2)] for i in range(2 * N)], float)
             vymidH = np.array([vyO[int(i / 2)] for i in range(2 * N)], float)
         else:
